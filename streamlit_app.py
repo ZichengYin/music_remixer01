@@ -1,5 +1,6 @@
 import io
 import os
+import random
 
 import librosa
 import matplotlib.pyplot as plt
@@ -14,12 +15,33 @@ PRESETS = {
     "lofi": {"pitch": -3, "speed": 0.92, "reverb": 0.5, "crackle_vol": 0.35, "ambient_vol": 0.45, "bass_boost": 4, "treble_cut": 8500},
     "chipmunk": {"pitch": 7, "speed": 1.15, "reverb": 0.25, "crackle_vol": 0.25, "ambient_vol": 0.3, "bass_boost": -2, "treble_cut": 0},
     "nightcore": {"pitch": 5, "speed": 1.3, "reverb": 0.3, "crackle_vol": 0.15, "ambient_vol": 0.25, "bass_boost": 1, "treble_cut": 11000},
+    "Dreamy": {"pitch": -3, "speed": 0.8, "reverb": 0.55, "crackle_vol": 0.25, "ambient_vol": 0.55, "bass_boost": 3, "treble_cut": 7000},
+    "Vintage": {"pitch": -1, "speed": 0.88, "reverb": 0.22, "crackle_vol": 0.45, "ambient_vol": 0.35, "bass_boost": 2, "treble_cut": 5500},
+    "Glitchy": {"pitch": 1, "speed": 1.12, "reverb": 0.12, "crackle_vol": 0.12, "ambient_vol": 0.15, "bass_boost": -3, "treble_cut": 9500},
+    "Hyperspeed": {"pitch": 6, "speed": 1.35, "reverb": 0.18, "crackle_vol": 0.1, "ambient_vol": 0.1, "bass_boost": -4, "treble_cut": 0},
+    "Underwater": {"pitch": -2, "speed": 0.78, "reverb": 0.45, "crackle_vol": 0.25, "ambient_vol": 0.6, "bass_boost": 6, "treble_cut": 2500},
+    "Radio": {"pitch": 0, "speed": 1.0, "reverb": 0.15, "crackle_vol": 0.38, "ambient_vol": 0.3, "bass_boost": -6, "treble_cut": 4200},
+    "Alien": {"pitch": 12, "speed": 1.28, "reverb": 0.35, "crackle_vol": 0.2, "ambient_vol": 0.35, "bass_boost": -1, "treble_cut": 10000},
+    "Spooky": {"pitch": -5, "speed": 0.83, "reverb": 0.65, "crackle_vol": 0.35, "ambient_vol": 0.4, "bass_boost": 5, "treble_cut": 3500},
 }
 
 MODE_LABELS = {
     "lofi": "Lo-fi 复古",
     "chipmunk": "花栗鼠变声",
     "nightcore": "Nightcore 加速",
+    "themed": "主题预设",
+}
+
+THEME_KEYS = ["Dreamy", "Vintage", "Glitchy", "Hyperspeed", "Underwater", "Radio", "Alien", "Spooky"]
+THEME_LABELS = {
+    "Dreamy": "梦幻",
+    "Vintage": "复古唱片",
+    "Glitchy": "故障电音",
+    "Hyperspeed": "极速",
+    "Underwater": "水下",
+    "Radio": "老式收音机",
+    "Alien": "外星",
+    "Spooky": "诡异",
 }
 
 
@@ -112,6 +134,17 @@ def apply_preset():
     remix_mode = st.session_state.remix_mode
     preset_key = remix_mode
 
+    if remix_mode == "themed":
+        if st.session_state.get("surprise_me", False):
+            theme_options = THEME_KEYS.copy()
+            previous_preset = st.session_state.get("active_preset")
+            if len(theme_options) > 1 and previous_preset in theme_options:
+                theme_options.remove(previous_preset)
+            preset_key = random.choice(theme_options)
+            st.session_state.theme = preset_key
+        else:
+            preset_key = st.session_state.get("theme", "Dreamy")
+
     st.session_state.active_preset = preset_key
     preset_values = PRESETS.get(preset_key, {})
 
@@ -123,11 +156,16 @@ def apply_preset():
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
     st.session_state.remix_mode = "lofi"
+    st.session_state.theme = "Dreamy"
+    st.session_state.surprise_me = False
     apply_preset()
 
 if st.session_state.get("remix_mode") not in MODE_LABELS:
     st.session_state.remix_mode = "lofi"
     apply_preset()
+
+if st.session_state.get("theme") not in THEME_KEYS:
+    st.session_state.theme = "Dreamy"
 
 # --- 文件上传 ---
 with st.expander("上传音频文件", expanded=True):
@@ -163,13 +201,30 @@ remix_mode = st.selectbox(
     on_change=apply_preset,
 )
 
+is_themed_mode = remix_mode == "themed"
+if is_themed_mode:
+    theme_col1, theme_col2 = st.columns([2, 1])
+    with theme_col1:
+        st.selectbox(
+            "选择主题",
+            THEME_KEYS,
+            format_func=lambda theme: THEME_LABELS[theme],
+            key="theme",
+            on_change=apply_preset,
+        )
+    with theme_col2:
+        st.checkbox("随机主题", key="surprise_me", on_change=apply_preset, help="随机选择一个主题预设。")
+
 # --- 效果控制 ---
 with st.expander("效果控制", expanded=True):
-    st.slider("变调", -12, 12, key="pitch")
-    st.slider("播放速度", 0.5, 2.0, key="speed", step=0.01)
-    st.slider("混响强度", 0.0, 1.0, key="reverb", step=0.01)
-    st.slider("低频增强（dB）", -12, 12, key="bass_boost")
-    st.slider("高频削减（Hz，0 = 关闭）", 0, 12000, key="treble_cut", step=100)
+    st.slider("变调", -12, 12, key="pitch", disabled=is_themed_mode)
+    st.slider("播放速度", 0.5, 2.0, key="speed", step=0.01, disabled=is_themed_mode)
+    st.slider("混响强度", 0.0, 1.0, key="reverb", step=0.01, disabled=is_themed_mode)
+    st.slider("低频增强（dB）", -12, 12, key="bass_boost", disabled=is_themed_mode)
+    st.slider("高频削减（Hz，0 = 关闭）", 0, 12000, key="treble_cut", step=100, disabled=is_themed_mode)
+    if is_themed_mode:
+        active_theme_label = THEME_LABELS.get(st.session_state.active_preset, st.session_state.active_preset)
+        st.info(f"当前主题：{active_theme_label}。变调、速度、混响和 EQ 由主题预设控制。")
 
 # --- 背景音量控制 ---
 if crackle_audio or ambient_audio:
