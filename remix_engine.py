@@ -80,9 +80,27 @@ def numpy_to_audiosegment(samples: np.ndarray, sample_rate=44100):
         interleaved.tobytes(), frame_rate=sample_rate, sample_width=2, channels=channels
     )
 
+def apply_eq(samples: np.ndarray, sample_rate: int, bass_boost=0, treble_cut=0):
+    eq_samples = samples
+
+    if abs(bass_boost) > 0.01:
+        crossover_hz = 250
+        bass = Pedalboard([LowpassFilter(crossover_hz)])(eq_samples, sample_rate)
+        upper = Pedalboard([HighpassFilter(crossover_hz)])(eq_samples, sample_rate)
+        bass_gain = 10 ** (bass_boost / 20.0)
+        eq_samples = upper + (bass * bass_gain)
+
+    if treble_cut and treble_cut > 0:
+        cutoff_hz = min(float(treble_cut), (sample_rate / 2) - 100)
+        if cutoff_hz > 20:
+            eq_samples = Pedalboard([LowpassFilter(cutoff_hz)])(eq_samples, sample_rate)
+
+    return eq_samples
+
 def remix_song(song_bytes, crackle_bytes=None, ambient_bytes=None,
                remix_mode="lofi", theme=None, pitch=0, speed=1.0,
-               reverb_wet=0.3, crackle_vol=0.1, ambient_vol=0.2):
+               reverb_wet=0.3, bass_boost=0, treble_cut=0,
+               crackle_vol=0.1, ambient_vol=0.2):
 
     song = ensure_format(AudioSegment.from_file(io.BytesIO(song_bytes)))
     original_duration = len(song)
@@ -120,6 +138,7 @@ def remix_song(song_bytes, crackle_bytes=None, ambient_bytes=None,
     # Apply pedalboard effects
     samples = audiosegment_to_numpy(song)
     processed = board(samples, song.frame_rate)
+    processed = apply_eq(processed, song.frame_rate, bass_boost=bass_boost, treble_cut=treble_cut)
     song = numpy_to_audiosegment(processed, sample_rate=song.frame_rate)
 
     # Overlay backgrounds
