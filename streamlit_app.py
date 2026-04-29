@@ -1,6 +1,7 @@
 import io
 import os
 import random
+import json
 
 import librosa
 import matplotlib.pyplot as plt
@@ -24,6 +25,10 @@ PRESETS = {
     "Alien": {"pitch": 12, "speed": 1.28, "reverb": 0.35, "crackle_vol": 0.2, "ambient_vol": 0.35, "bass_boost": -1, "treble_cut": 10000},
     "Spooky": {"pitch": -5, "speed": 0.83, "reverb": 0.65, "crackle_vol": 0.35, "ambient_vol": 0.4, "bass_boost": 5, "treble_cut": 3500},
 }
+
+# 用户自定义预设存储
+if "user_presets" not in st.session_state:
+    st.session_state.user_presets = {}
 
 MODE_LABELS = {
     "lofi": "Lo-fi 复古",
@@ -83,7 +88,68 @@ def plot_waveform(samples, sample_rate):
     return fig
 
 
-# --- 页面布局 ---
+def apply_preset():
+    remix_mode = st.session_state.remix_mode
+    preset_key = remix_mode
+
+    if remix_mode == "themed":
+        if st.session_state.get("surprise_me", False):
+            theme_options = THEME_KEYS.copy()
+            previous_preset = st.session_state.get("active_preset")
+            if len(theme_options) > 1 and previous_preset in theme_options:
+                theme_options.remove(previous_preset)
+            preset_key = random.choice(theme_options)
+            st.session_state.theme = preset_key
+        else:
+            preset_key = st.session_state.get("theme", "Dreamy")
+
+    st.session_state.active_preset = preset_key
+    preset_values = PRESETS.get(preset_key, {})
+
+    for key, value in preset_values.items():
+        st.session_state[key] = value
+
+
+def reset_to_default():
+    """重置到当前预设的默认值"""
+    preset_key = st.session_state.active_preset
+    preset_values = PRESETS.get(preset_key, {})
+    for key, value in preset_values.items():
+        st.session_state[key] = value
+
+
+def save_current_preset():
+    """保存当前参数为用户预设"""
+    name = st.session_state.new_preset_name.strip()
+    if not name:
+        st.warning("请输入预设名称")
+        return
+    current_params = {
+        "pitch": st.session_state.pitch,
+        "speed": st.session_state.speed,
+        "reverb": st.session_state.reverb,
+        "bass_boost": st.session_state.bass_boost,
+        "treble_cut": st.session_state.treble_cut,
+        "crackle_vol": st.session_state.crackle_vol,
+        "ambient_vol": st.session_state.ambient_vol,
+    }
+    st.session_state.user_presets[name] = current_params
+    st.success(f"已保存预设：{name}")
+
+
+def load_user_preset():
+    """加载用户预设"""
+    preset_name = st.session_state.load_preset_name
+    if preset_name and preset_name in st.session_state.user_presets:
+        params = st.session_state.user_presets[preset_name]
+        for key, value in params.items():
+            st.session_state[key] = value
+        st.success(f"已加载预设：{preset_name}")
+    elif preset_name:
+        st.warning(f"预设不存在：{preset_name}")
+
+
+# --- 页面配置 ---
 st.set_page_config(page_title="音频混音工作台", layout="centered")
 st.markdown(
     """
@@ -140,6 +206,9 @@ st.markdown(
     hr {
         border-color: #ff8c42;
     }
+    .stProgress > div > div > div > div {
+        background-color: #ff7b2c;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -148,35 +217,14 @@ st.title("🌅 音频混音工作台")
 st.markdown("上传音乐，调整变调、速度、混响和 EQ，一键生成新的混音版本。")
 
 
-# --- 应用预设的回调 ---
-def apply_preset():
-    remix_mode = st.session_state.remix_mode
-    preset_key = remix_mode
-
-    if remix_mode == "themed":
-        if st.session_state.get("surprise_me", False):
-            theme_options = THEME_KEYS.copy()
-            previous_preset = st.session_state.get("active_preset")
-            if len(theme_options) > 1 and previous_preset in theme_options:
-                theme_options.remove(previous_preset)
-            preset_key = random.choice(theme_options)
-            st.session_state.theme = preset_key
-        else:
-            preset_key = st.session_state.get("theme", "Dreamy")
-
-    st.session_state.active_preset = preset_key
-    preset_values = PRESETS.get(preset_key, {})
-
-    for key, value in preset_values.items():
-        st.session_state[key] = value
-
-
 # --- 会话状态初始化 ---
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
     st.session_state.remix_mode = "lofi"
     st.session_state.theme = "Dreamy"
     st.session_state.surprise_me = False
+    st.session_state.active_preset = "lofi"
+    st.session_state.preview_mode = False
     apply_preset()
 
 if st.session_state.get("remix_mode") not in MODE_LABELS:
@@ -212,13 +260,19 @@ if main_audio_bytes:
 
 # --- 模式选择 ---
 st.markdown("## 混音设置")
-remix_mode = st.selectbox(
-    "选择混音模式",
-    list(MODE_LABELS.keys()),
-    format_func=lambda mode: MODE_LABELS[mode],
-    key="remix_mode",
-    on_change=apply_preset,
-)
+
+col_mode, col_output = st.columns([3, 1])
+with col_mode:
+    remix_mode = st.selectbox(
+        "选择混音模式",
+        list(MODE_LABELS.keys()),
+        format_func=lambda mode: MODE_LABELS[mode],
+        key="remix_mode",
+        on_change=apply_preset,
+    )
+
+with col_output:
+    output_format = st.selectbox("输出格式", ["mp3", "wav"], index=0)
 
 is_themed_mode = remix_mode == "themed"
 if is_themed_mode:
@@ -241,6 +295,12 @@ with st.expander("效果控制", expanded=True):
     st.slider("混响强度", 0.0, 1.0, key="reverb", step=0.01, disabled=is_themed_mode)
     st.slider("低频增强（dB）", -12, 12, key="bass_boost", disabled=is_themed_mode)
     st.slider("高频削减（Hz，0 = 关闭）", 0, 12000, key="treble_cut", step=100, disabled=is_themed_mode)
+    
+    # 重置按钮
+    if st.button("🔄 重置到预设默认值"):
+        reset_to_default()
+        st.rerun()
+    
     if is_themed_mode:
         active_theme_label = THEME_LABELS.get(st.session_state.active_preset, st.session_state.active_preset)
         st.info(f"当前主题：{active_theme_label}。变调、速度、混响和 EQ 由主题预设控制。")
@@ -260,35 +320,91 @@ else:
     st.session_state.crackle_vol = 0.0
     st.session_state.ambient_vol = 0.0
 
-# --- 处理按钮 ---
-st.markdown("---")
-if main_audio:
-    if st.button("开始处理音频"):
-        with st.spinner("正在生成混音..."):
-            try:
-                output_path = remix_song(
-                    song_bytes=main_audio_bytes,
-                    crackle_bytes=crackle_audio.read() if crackle_audio else None,
-                    ambient_bytes=ambient_audio.read() if ambient_audio else None,
-                    remix_mode=st.session_state.remix_mode,
-                    pitch=st.session_state.pitch,
-                    speed=st.session_state.speed,
-                    reverb_wet=st.session_state.reverb,
-                    bass_boost=st.session_state.bass_boost,
-                    treble_cut=st.session_state.treble_cut,
-                    crackle_vol=st.session_state.crackle_vol,
-                    ambient_vol=st.session_state.ambient_vol,
-                    theme=st.session_state.active_preset,
-                )
+# --- 用户预设管理 ---
+with st.expander("保存/加载自定义预设"):
+    col_save, col_load = st.columns(2)
+    with col_save:
+        st.text_input("预设名称", key="new_preset_name", placeholder="例如：我的摇滚音效")
+        st.button("💾 保存当前设置", on_click=save_current_preset)
+    with col_load:
+        preset_options = list(st.session_state.user_presets.keys())
+        if preset_options:
+            st.selectbox("加载预设", [""] + preset_options, key="load_preset_name", on_change=load_user_preset)
+        else:
+            st.caption("暂无保存的预设")
 
-                with open(output_path, "rb") as f:
-                    audio_bytes = f.read()
-                    st.success("混音完成！可以试听或下载：")
-                    st.audio(audio_bytes, format="audio/mp3")
-                    st.download_button("下载混音文件", audio_bytes, "remixed_track.mp3", "audio/mp3")
-                os.unlink(output_path)
-            except Exception as e:
-                st.error(f"处理失败：{str(e)}")
-                st.exception(e)
+# --- 处理选项 ---
+st.markdown("---")
+col_preview, col_full = st.columns(2)
+
+with col_preview:
+    preview_button = st.button("🎧 试听前10秒", use_container_width=True)
+with col_full:
+    full_button = st.button("🎛 完整处理音频", use_container_width=True, type="primary")
+
+# 进度条占位
+progress_placeholder = st.empty()
+
+def update_progress(stage, percent):
+    """进度回调函数"""
+    with progress_placeholder.container():
+        st.progress(percent / 100)
+        st.caption(f"当前阶段：{stage} ({percent}%)")
+
+if main_audio:
+    # 确定使用哪种模式
+    is_preview = False
+    if preview_button:
+        is_preview = True
+        preview_seconds = 10
+    elif full_button:
+        is_preview = False
+        preview_seconds = 0
+    else:
+        preview_seconds = None  # 未点击任何按钮
+    
+    if preview_seconds is not None:
+        try:
+            output_path = remix_song(
+                song_bytes=main_audio_bytes,
+                crackle_bytes=crackle_audio.read() if crackle_audio else None,
+                ambient_bytes=ambient_audio.read() if ambient_audio else None,
+                remix_mode=st.session_state.remix_mode,
+                pitch=st.session_state.pitch,
+                speed=st.session_state.speed,
+                reverb_wet=st.session_state.reverb,
+                bass_boost=st.session_state.bass_boost,
+                treble_cut=st.session_state.treble_cut,
+                crackle_vol=st.session_state.crackle_vol,
+                ambient_vol=st.session_state.ambient_vol,
+                theme=st.session_state.active_preset,
+                preview_seconds=preview_seconds,
+                progress_callback=update_progress,
+            )
+
+            with open(output_path, "rb") as f:
+                audio_bytes = f.read()
+            
+            progress_placeholder.empty()
+            
+            if is_preview:
+                st.success("试听生成完成！")
+                st.audio(audio_bytes, format=f"audio/{output_format}")
+                st.caption("试听仅包含前10秒。如需完整版，请点击「完整处理音频」。")
+            else:
+                st.success("混音完成！可以试听或下载：")
+                st.audio(audio_bytes, format=f"audio/{output_format}")
+                st.download_button(
+                    "下载混音文件", 
+                    audio_bytes, 
+                    f"remixed_track.{output_format}", 
+                    f"audio/{output_format}"
+                )
+            
+            os.unlink(output_path)
+        except Exception as e:
+            progress_placeholder.empty()
+            st.error(f"处理失败：{str(e)}")
+            st.exception(e)
 else:
     st.warning("请先上传主音轨。")
