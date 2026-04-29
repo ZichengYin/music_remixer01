@@ -73,17 +73,17 @@ def plot_waveform(samples, sample_rate):
 
     time_axis = np.arange(len(samples)) / sample_rate
     fig, ax = plt.subplots(figsize=(8, 2.4))
-    ax.plot(time_axis, samples, linewidth=0.7, color="#ff8c42")
+    ax.plot(time_axis, samples, linewidth=0.7, color="#d95b0e")  # 深橙色线条
     ax.set_xlabel("时间 / Time (s)")
     ax.set_ylabel("振幅 / Amplitude")
     ax.set_title("波形 / Waveform")
-    ax.grid(alpha=0.18, color="#ffb561")
-    fig.patch.set_facecolor("#2d1b11")
-    ax.set_facecolor("#3d2618")
-    ax.xaxis.label.set_color("#ffd2a5")
-    ax.yaxis.label.set_color("#ffd2a5")
-    ax.title.set_color("#ffb561")
-    ax.tick_params(colors="#ffd2a5")
+    ax.grid(alpha=0.18, color="#d95b0e")
+    fig.patch.set_facecolor("#fef7e8")  # 浅米色背景
+    ax.set_facecolor("#fef0dc")         # 更浅的米色
+    ax.xaxis.label.set_color("#4a2e1a")  # 深棕色文字
+    ax.yaxis.label.set_color("#4a2e1a")
+    ax.title.set_color("#4a2e1a")
+    ax.tick_params(colors="#4a2e1a")
     fig.tight_layout()
     return fig
 
@@ -151,95 +151,105 @@ st.set_page_config(page_title="Audio Remixer", layout="centered")
 st.markdown(
     """
     <style>
+    /* 整体浅色背景（米色暖调） */
     .stApp {
-        background: linear-gradient(180deg, #9b3a0a 0%, #5a2002 35%, #3a1200 70%, #1f0a00 100%);
-        color: #f0ddc0;
+        background: linear-gradient(135deg, #fef9e6 0%, #fff4e0 50%, #fef0dc 100%);
+        color: #2c1a0e;
     }
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2rem;
     }
 
-    /* 所有文字颜色 */
+    /* 所有文字颜色变为深褐色，提高对比度 */
     h1, h2, h3, label, .stMarkdown, .stMetric, .stCaption, .stAlert, .stInfo, .stWarning, .stSuccess, .stException, p, span, div {
-        color: #f7e5cc !important;
+        color: #2c1a0e !important;
     }
 
-    /* 覆盖 Streamlit 默认类 */
+    /* 覆盖 Streamlit 默认类（深色文字） */
     .st-emotion-cache-1v0mbdj, .st-emotion-cache-1wbqy5l, .st-emotion-cache-1y4p8pa, .st-emotion-cache-16txtl3, .st-emotion-cache-183lzff, .st-emotion-cache-1gv3huu {
-        color: #f7e5cc !important;
+        color: #2c1a0e !important;
     }
 
+    /* Expander 面板浅色半透明，深色边框 */
     div[data-testid="stExpander"] {
-        background: rgba(30, 15, 8, 0.6) !important;
-        border: 1px solid rgba(255, 140, 66, 0.3) !important;
+        background: rgba(255, 245, 225, 0.85) !important;
+        border: 1px solid rgba(150, 80, 30, 0.4) !important;
         border-radius: 12px;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(2px);
     }
     div[data-testid="stExpander"] summary {
         background: rgba(0,0,0,0) !important;
-        color: #ffbc7a !important;
+        color: #8b3c0c !important;
     }
 
-    /* 上传区域 - 强制生效 */
+    /* 上传区域浅色背景 + 深色文字/边框 */
     div[data-testid="stFileUploaderDropzone"],
     div[data-testid="stFileUploaderDropzone"] > div,
     div[data-testid="stFileUploaderDropzone"] div {
-        background: #cc5500 !important;
-        border-color: rgba(255, 140, 66, 0.8) !important;
+        background: #ffe6cc !important;
+        border-color: #d97a2b !important;
         border-radius: 10px !important;
-        color: #4a2a10 !important;
+        color: #2c1a0e !important;
     }
 
+    /* 按钮：暖橙色底 + 深色字，悬浮稍亮 */
     .stButton > button, .stDownloadButton > button {
-        background: #c55115 !important;
-        color: #fff0e0 !important;
+        background: #e8772e !important;
+        color: #2c1a0e !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
-        background: #e0712e !important;
-        color: #ffffff !important;
+        background: #f59142 !important;
+        color: #1f1107 !important;
     }
 
+    /* 下拉框、数字输入、滑块背景浅色，深色文字 */
     div[data-baseweb="select"] > div,
     div[data-testid="stSelectbox"] div,
     div[data-testid="stNumberInput"] input,
     div[data-testid="stSlider"] > div {
-        background-color: #2a180e !important;
-        border-color: #b85a1e !important;
-        color: #ffe0b5 !important;
+        background-color: #fff6e8 !important;
+        border-color: #d97a2b !important;
+        color: #2c1a0e !important;
     }
 
+    /* 滑块轨道颜色加深 */
     div[data-testid="stSlider"] div[data-baseweb="slider"] {
-        background-color: #6b2e0e !important;
+        background-color: #d9b48b !important;
     }
+    /* 滑块圆点 */
     div[data-testid="stSlider"] div[role="slider"] {
-        background-color: #ff9550 !important;
-        border-color: #ffd49c !important;
+        background-color: #e8772e !important;
+        border-color: #b2500a !important;
     }
 
+    /* Metric 数值颜色 */
     div[data-testid="stMetricValue"] {
-        color: #ffbc7a !important;
+        color: #b2500a !important;
         font-weight: 500;
     }
 
+    /* Checkbox 文字颜色 */
     .stCheckbox label span {
-        color: #f0d5b0 !important;
+        color: #2c1a0e !important;
     }
 
+    /* 滑块标签数值颜色 */
     .stSlider label, .stSlider output {
-        color: #ffcf96 !important;
+        color: #4a2e1a !important;
     }
 
+    /* 提示框、警告框等色调统一 */
     .stAlert {
-        background-color: #2e170b !important;
-        color: #ffd9aa !important;
-        border-left: 4px solid #c55115 !important;
+        background-color: #fff0e0 !important;
+        color: #2c1a0e !important;
+        border-left: 4px solid #e8772e !important;
     }
     hr {
-        border-color: #c55115 !important;
+        border-color: #d9b48b !important;
     }
     </style>
     """,
