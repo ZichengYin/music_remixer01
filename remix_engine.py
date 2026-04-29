@@ -9,12 +9,11 @@ from pedalboard import (
 )
 
 def ensure_format(audio: AudioSegment) -> AudioSegment:
-    # Force stereo, 44.1kHz, 16-bit
     return audio.set_channels(2).set_frame_rate(44100).set_sample_width(2)
 
 def get_theme_effects(theme):
     board = Pedalboard()
-    speed = 1.0 # Default speed, though UI now controls this
+    speed = 1.0
 
     if theme == "Dreamy":
         board.append(Reverb(room_size=0.8, wet_level=0.5))
@@ -100,50 +99,70 @@ def apply_eq(samples: np.ndarray, sample_rate: int, bass_boost=0, treble_cut=0):
 def remix_song(song_bytes, crackle_bytes=None, ambient_bytes=None,
                remix_mode="lofi", theme=None, pitch=0, speed=1.0,
                reverb_wet=0.3, bass_boost=0, treble_cut=0,
-               crackle_vol=0.1, ambient_vol=0.2):
+               crackle_vol=0.1, ambient_vol=0.2,
+               preview_seconds=0, progress_callback=None):
+    """
+    preview_seconds: 如果 > 0，只处理前 N 秒（用于试听）
+    progress_callback: 函数，接收 (stage, percent) 参数
+    """
+    
+    def report(stage, percent):
+        if progress_callback:
+            progress_callback(stage, percent)
 
+    report("加载音频", 0)
     song = ensure_format(AudioSegment.from_file(io.BytesIO(song_bytes)))
+    
+    # 试听模式：裁剪
+    if preview_seconds > 0:
+        preview_ms = min(preview_seconds * 1000, len(song))
+        song = song[:preview_ms]
+    
     original_duration = len(song)
 
     def prepare_bg(bg_bytes, volume):
         if not bg_bytes or volume <= 0:
             return AudioSegment.silent(duration=original_duration).set_channels(2)
         bg = ensure_format(AudioSegment.from_file(io.BytesIO(bg_bytes)))
-        # Adjust volume using pydub's dB scale
         gain = -30 * (1.0 - volume)
         bg = bg + gain
         return (bg * ((original_duration // len(bg)) + 1))[:original_duration]
 
+    report("加载背景音", 10)
     crackle = prepare_bg(crackle_bytes, crackle_vol)
     ambient = prepare_bg(ambient_bytes, ambient_vol)
 
     board = Pedalboard()
 
-    # The UI layer now determines all parameters. This engine just applies them.
     if remix_mode == "themed":
-        # In themed mode, a complex board is retrieved, and sliders are ignored.
-        board, _ = get_theme_effects(theme) # We ignore the speed returned here
+        board, _ = get_theme_effects(theme)
     elif remix_mode == "chipmunk":
         board.append(PitchShift(pitch))
     elif remix_mode == "nightcore":
         board.append(PitchShift(pitch))
-    else:  # lofi is the default
+    else:
         board.append(PitchShift(pitch))
         board.append(Reverb(wet_level=reverb_wet))
 
-    # Apply speed change directly from the UI-provided value
+    report("应用速度变化", 30)
     if abs(speed - 1.0) > 0.01:
         song = song.speedup(playback_speed=speed)
 
-    # Apply pedalboard effects
+    report("应用音频效果", 50)
     samples = audiosegment_to_numpy(song)
     processed = board(samples, song.frame_rate)
+    
+    report("应用 EQ", 70)
     processed = apply_eq(processed, song.frame_rate, bass_boost=bass_boost, treble_cut=treble_cut)
     song = numpy_to_audiosegment(processed, sample_rate=song.frame_rate)
 
-    # Overlay backgrounds
+    report("混合背景音", 85)
     final_mix = song.overlay(crackle).overlay(ambient)
+    
+    report("音量标准化", 95)
+    final_mix = final_mix.normalize()
 
+    report("导出文件", 100)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
         final_mix.export(f.name, format="mp3")
         return f.name
