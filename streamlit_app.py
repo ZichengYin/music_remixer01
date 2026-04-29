@@ -31,22 +31,22 @@ if "user_presets" not in st.session_state:
     st.session_state.user_presets = {}
 
 MODE_LABELS = {
-    "lofi": "Lo-fi 复古",
-    "chipmunk": "花栗鼠变声",
-    "nightcore": "Nightcore 加速",
-    "themed": "主题预设",
+    "lofi": "Lo-fi / 低保真",
+    "chipmunk": "Chipmunk / 松鼠音",
+    "nightcore": "Nightcore / 夜店",
+    "themed": "Themed / 主题",
 }
 
 THEME_KEYS = ["Dreamy", "Vintage", "Glitchy", "Hyperspeed", "Underwater", "Radio", "Alien", "Spooky"]
 THEME_LABELS = {
-    "Dreamy": "梦幻",
-    "Vintage": "复古唱片",
-    "Glitchy": "故障电音",
-    "Hyperspeed": "极速",
-    "Underwater": "水下",
-    "Radio": "老式收音机",
-    "Alien": "外星",
-    "Spooky": "诡异",
+    "Dreamy": "Dreamy / 梦幻",
+    "Vintage": "Vintage / 复古",
+    "Glitchy": "Glitchy / 故障",
+    "Hyperspeed": "Hyperspeed / 极速",
+    "Underwater": "Underwater / 水下",
+    "Radio": "Radio / 收音机",
+    "Alien": "Alien / 外星",
+    "Spooky": "Spooky / 诡异",
 }
 
 
@@ -74,9 +74,9 @@ def plot_waveform(samples, sample_rate):
     time_axis = np.arange(len(samples)) / sample_rate
     fig, ax = plt.subplots(figsize=(8, 2.4))
     ax.plot(time_axis, samples, linewidth=0.7, color="#ff8c42")
-    ax.set_xlabel("时间（秒）")
-    ax.set_ylabel("振幅")
-    ax.set_title("音频波形")
+    ax.set_xlabel("时间 / Time (s)")
+    ax.set_ylabel("振幅 / Amplitude")
+    ax.set_title("波形 / Waveform")
     ax.grid(alpha=0.18, color="#ffb561")
     fig.patch.set_facecolor("#2d1b11")
     ax.set_facecolor("#3d2618")
@@ -111,7 +111,6 @@ def apply_preset():
 
 
 def reset_to_default():
-    """重置到当前预设的默认值"""
     preset_key = st.session_state.active_preset
     preset_values = PRESETS.get(preset_key, {})
     for key, value in preset_values.items():
@@ -119,10 +118,9 @@ def reset_to_default():
 
 
 def save_current_preset():
-    """保存当前参数为用户预设"""
     name = st.session_state.new_preset_name.strip()
     if not name:
-        st.warning("请输入预设名称")
+        st.warning("请输入预设名称 / Please enter a preset name")
         return
     current_params = {
         "pitch": st.session_state.pitch,
@@ -134,88 +132,121 @@ def save_current_preset():
         "ambient_vol": st.session_state.ambient_vol,
     }
     st.session_state.user_presets[name] = current_params
-    st.success(f"已保存预设：{name}")
+    st.success(f"已保存预设 / Saved: {name}")
 
 
 def load_user_preset():
-    """加载用户预设"""
     preset_name = st.session_state.load_preset_name
     if preset_name and preset_name in st.session_state.user_presets:
         params = st.session_state.user_presets[preset_name]
         for key, value in params.items():
             st.session_state[key] = value
-        st.success(f"已加载预设：{preset_name}")
+        st.success(f"已加载预设 / Loaded: {preset_name}")
     elif preset_name:
-        st.warning(f"预设不存在：{preset_name}")
+        st.warning(f"预设不存在 / Preset not found: {preset_name}")
 
 
 # --- 页面配置 ---
-st.set_page_config(page_title="音频混音工作台", layout="centered")
+st.set_page_config(page_title="Audio Remixer", layout="centered")
 st.markdown(
     """
     <style>
     .stApp {
-        background: linear-gradient(180deg, #ff7b2c 0%, #d94b1a 35%, #8b2c0d 70%, #3d1406 100%);
-        color: #fff0e0;
+        background: linear-gradient(180deg, #9b3a0a 0%, #5a2002 35%, #3a1200 70%, #1f0a00 100%);
+        color: #f0ddc0;
     }
     .block-container {
-        padding-top: 2.3rem;
-        padding-bottom: 3rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
-    h1, h2, h3, label, .stMarkdown, .stMetric {
-        color: #ffe6cc !important;
+
+    /* 所有文字颜色 */
+    h1, h2, h3, label, .stMarkdown, .stMetric, .stCaption, .stAlert, .stInfo, .stWarning, .stSuccess, .stException, p, span, div {
+        color: #f7e5cc !important;
     }
+
+    /* 覆盖 Streamlit 默认类 */
+    .st-emotion-cache-1v0mbdj, .st-emotion-cache-1wbqy5l, .st-emotion-cache-1y4p8pa, .st-emotion-cache-16txtl3, .st-emotion-cache-183lzff, .st-emotion-cache-1gv3huu {
+        color: #f7e5cc !important;
+    }
+
     div[data-testid="stExpander"] {
-        background: rgba(45, 25, 15, 0.85);
-        border: 1px solid rgba(255, 140, 66, 0.5);
-        border-radius: 10px;
+        background: rgba(30, 15, 8, 0.6) !important;
+        border: 1px solid rgba(255, 140, 66, 0.3) !important;
+        border-radius: 12px;
+        backdrop-filter: blur(4px);
     }
-    div[data-testid="stFileUploaderDropzone"] {
-        background: rgba(60, 35, 25, 0.8);
-        border-color: rgba(255, 140, 66, 0.6);
+    div[data-testid="stExpander"] summary {
+        background: rgba(0,0,0,0) !important;
+        color: #ffbc7a !important;
     }
+
+    /* 上传区域 - 强制生效 */
+    div[data-testid="stFileUploaderDropzone"],
+    div[data-testid="stFileUploaderDropzone"] > div,
+    div[data-testid="stFileUploaderDropzone"] div {
+        background: #cc5500 !important;
+        border-color: rgba(255, 140, 66, 0.8) !important;
+        border-radius: 10px !important;
+        color: #4a2a10 !important;
+    }
+
     .stButton > button, .stDownloadButton > button {
-        background: #ff7b2c;
-        color: #2d1406;
-        border: 0;
-        border-radius: 8px;
-        font-weight: 700;
+        background: #c55115 !important;
+        color: #fff0e0 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
-        background: #ff9f5a;
-        color: #2d1406;
-        border: 0;
+        background: #e0712e !important;
+        color: #ffffff !important;
     }
-    div[data-baseweb="select"] > div {
-        background-color: rgba(60, 35, 25, 0.9);
-        border-color: rgba(255, 140, 66, 0.5);
+
+    div[data-baseweb="select"] > div,
+    div[data-testid="stSelectbox"] div,
+    div[data-testid="stNumberInput"] input,
+    div[data-testid="stSlider"] > div {
+        background-color: #2a180e !important;
+        border-color: #b85a1e !important;
+        color: #ffe0b5 !important;
     }
+
+    div[data-testid="stSlider"] div[data-baseweb="slider"] {
+        background-color: #6b2e0e !important;
+    }
+    div[data-testid="stSlider"] div[role="slider"] {
+        background-color: #ff9550 !important;
+        border-color: #ffd49c !important;
+    }
+
     div[data-testid="stMetricValue"] {
-        color: #ffbc7a;
+        color: #ffbc7a !important;
+        font-weight: 500;
     }
-    .stSlider > div > div > div {
-        background-color: #ff7b2c;
+
+    .stCheckbox label span {
+        color: #f0d5b0 !important;
     }
-    .stCheckbox > label {
-        color: #ffe6cc !important;
+
+    .stSlider label, .stSlider output {
+        color: #ffcf96 !important;
     }
+
     .stAlert {
-        background-color: #5c2c1a;
-        color: #ffddb0;
+        background-color: #2e170b !important;
+        color: #ffd9aa !important;
+        border-left: 4px solid #c55115 !important;
     }
     hr {
-        border-color: #ff8c42;
-    }
-    .stProgress > div > div > div > div {
-        background-color: #ff7b2c;
+        border-color: #c55115 !important;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
-st.title("🌅 音频混音工作台")
-st.markdown("上传音乐，调整变调、速度、混响和 EQ，一键生成新的混音版本。")
-
+st.title("🌅 Audio Remixer / 音频混音工作台")
+st.markdown("Upload a track, adjust effects, and generate a remixed version. / 上传音乐，调整效果，生成混音版本。")
 
 # --- 会话状态初始化 ---
 if "initialized" not in st.session_state:
@@ -235,36 +266,35 @@ if st.session_state.get("theme") not in THEME_KEYS:
     st.session_state.theme = "Dreamy"
 
 # --- 文件上传 ---
-with st.expander("上传音频文件", expanded=True):
-    main_audio = st.file_uploader("主音轨（MP3）", type=["mp3"])
+with st.expander("Upload / 上传音频文件", expanded=True):
+    main_audio = st.file_uploader("Main track (MP3) / 主音轨", type=["mp3"])
     col1, col2 = st.columns(2)
     with col1:
-        crackle_audio = st.file_uploader("黑胶噪声（可选）", type=["mp3", "wav"])
+        crackle_audio = st.file_uploader("Vinyl crackle (optional) / 黑胶噪声", type=["mp3", "wav"])
     with col2:
-        ambient_audio = st.file_uploader("氛围背景音（可选）", type=["mp3", "wav"])
-    st.caption("提示：可以在 [freesound.org](https://freesound.org) 搜索黑胶噪声或氛围音素材。")
+        ambient_audio = st.file_uploader("Ambient background (optional) / 氛围背景音", type=["mp3", "wav"])
 
 main_audio_bytes = main_audio.getvalue() if main_audio else None
 
 if main_audio_bytes:
-    with st.expander("音频分析", expanded=True):
+    with st.expander("Audio Analysis / 音频分析", expanded=True):
         try:
             analysis_samples, analysis_sr = load_audio_for_analysis(main_audio_bytes)
             bpm = detect_bpm(analysis_samples, analysis_sr)
-            st.metric("检测到的 BPM", f"{bpm:.1f}")
+            st.metric("BPM", f"{bpm:.1f}")
             fig = plot_waveform(analysis_samples, analysis_sr)
             st.pyplot(fig)
             plt.close(fig)
         except Exception as e:
-            st.warning(f"无法分析音频：{str(e)}")
+            st.warning(f"无法分析音频 / Analysis failed: {str(e)}")
 
 # --- 模式选择 ---
-st.markdown("## 混音设置")
+st.markdown("## Mix Settings / 混音设置")
 
 col_mode, col_output = st.columns([3, 1])
 with col_mode:
     remix_mode = st.selectbox(
-        "选择混音模式",
+        "Mode / 模式",
         list(MODE_LABELS.keys()),
         format_func=lambda mode: MODE_LABELS[mode],
         key="remix_mode",
@@ -272,48 +302,47 @@ with col_mode:
     )
 
 with col_output:
-    output_format = st.selectbox("输出格式", ["mp3", "wav"], index=0)
+    output_format = st.selectbox("Output / 输出格式", ["mp3", "wav"], index=0)
 
 is_themed_mode = remix_mode == "themed"
 if is_themed_mode:
     theme_col1, theme_col2 = st.columns([2, 1])
     with theme_col1:
         st.selectbox(
-            "选择主题",
+            "Theme / 主题",
             THEME_KEYS,
             format_func=lambda theme: THEME_LABELS[theme],
             key="theme",
             on_change=apply_preset,
         )
     with theme_col2:
-        st.checkbox("随机主题", key="surprise_me", on_change=apply_preset, help="随机选择一个主题预设。")
+        st.checkbox("Random / 随机主题", key="surprise_me", on_change=apply_preset)
 
 # --- 效果控制 ---
-with st.expander("效果控制", expanded=True):
-    st.slider("变调", -12, 12, key="pitch", disabled=is_themed_mode)
-    st.slider("播放速度", 0.5, 2.0, key="speed", step=0.01, disabled=is_themed_mode)
-    st.slider("混响强度", 0.0, 1.0, key="reverb", step=0.01, disabled=is_themed_mode)
-    st.slider("低频增强（dB）", -12, 12, key="bass_boost", disabled=is_themed_mode)
-    st.slider("高频削减（Hz，0 = 关闭）", 0, 12000, key="treble_cut", step=100, disabled=is_themed_mode)
+with st.expander("Effects / 效果控制", expanded=True):
+    st.slider("Pitch shift / 变调", -12, 12, key="pitch", disabled=is_themed_mode)
+    st.slider("Speed / 速度", 0.5, 2.0, key="speed", step=0.01, disabled=is_themed_mode)
+    st.slider("Reverb / 混响", 0.0, 1.0, key="reverb", step=0.01, disabled=is_themed_mode)
+    st.slider("Bass boost (dB) / 低频增强", -12, 12, key="bass_boost", disabled=is_themed_mode)
+    st.slider("Treble cut (Hz, 0 = off) / 高频削减", 0, 12000, key="treble_cut", step=100, disabled=is_themed_mode)
     
-    # 重置按钮
-    if st.button("🔄 重置到预设默认值"):
+    if st.button("Reset to preset / 重置到预设值"):
         reset_to_default()
         st.rerun()
     
     if is_themed_mode:
         active_theme_label = THEME_LABELS.get(st.session_state.active_preset, st.session_state.active_preset)
-        st.info(f"当前主题：{active_theme_label}。变调、速度、混响和 EQ 由主题预设控制。")
+        st.info(f"Active theme / 当前主题：{active_theme_label}")
 
 # --- 背景音量控制 ---
 if crackle_audio or ambient_audio:
-    with st.expander("背景音混合", expanded=True):
+    with st.expander("Background mixing / 背景音混合", expanded=True):
         if crackle_audio:
-            st.slider("黑胶噪声音量", 0.0, 1.0, key="crackle_vol", step=0.01)
+            st.slider("Crackle volume / 噪声音量", 0.0, 1.0, key="crackle_vol", step=0.01)
         else:
             st.session_state.crackle_vol = 0.0
         if ambient_audio:
-            st.slider("氛围背景音量", 0.0, 1.0, key="ambient_vol", step=0.01)
+            st.slider("Ambient volume / 背景音量", 0.0, 1.0, key="ambient_vol", step=0.01)
         else:
             st.session_state.ambient_vol = 0.0
 else:
@@ -321,38 +350,35 @@ else:
     st.session_state.ambient_vol = 0.0
 
 # --- 用户预设管理 ---
-with st.expander("保存/加载自定义预设"):
+with st.expander("Save/Load custom presets / 保存/加载自定义预设"):
     col_save, col_load = st.columns(2)
     with col_save:
-        st.text_input("预设名称", key="new_preset_name", placeholder="例如：我的摇滚音效")
-        st.button("💾 保存当前设置", on_click=save_current_preset)
+        st.text_input("Preset name / 预设名称", key="new_preset_name", placeholder="e.g. My Bass Boost")
+        st.button("Save current / 保存当前设置", on_click=save_current_preset)
     with col_load:
         preset_options = list(st.session_state.user_presets.keys())
         if preset_options:
-            st.selectbox("加载预设", [""] + preset_options, key="load_preset_name", on_change=load_user_preset)
+            st.selectbox("Load preset / 加载预设", [""] + preset_options, key="load_preset_name", on_change=load_user_preset)
         else:
-            st.caption("暂无保存的预设")
+            st.caption("No saved presets / 暂无保存的预设")
 
 # --- 处理选项 ---
 st.markdown("---")
 col_preview, col_full = st.columns(2)
 
 with col_preview:
-    preview_button = st.button("🎧 试听前10秒", use_container_width=True)
+    preview_button = st.button("Preview 10s / 试听前10秒")
 with col_full:
-    full_button = st.button("🎛 完整处理音频", use_container_width=True, type="primary")
+    full_button = st.button("Full remix / 完整处理")
 
-# 进度条占位
 progress_placeholder = st.empty()
 
 def update_progress(stage, percent):
-    """进度回调函数"""
     with progress_placeholder.container():
         st.progress(percent / 100)
-        st.caption(f"当前阶段：{stage} ({percent}%)")
+        st.caption(f"{stage} ({percent}%)")
 
 if main_audio:
-    # 确定使用哪种模式
     is_preview = False
     if preview_button:
         is_preview = True
@@ -361,7 +387,7 @@ if main_audio:
         is_preview = False
         preview_seconds = 0
     else:
-        preview_seconds = None  # 未点击任何按钮
+        preview_seconds = None
     
     if preview_seconds is not None:
         try:
@@ -388,14 +414,14 @@ if main_audio:
             progress_placeholder.empty()
             
             if is_preview:
-                st.success("试听生成完成！")
+                st.success("Preview ready / 试听生成完成")
                 st.audio(audio_bytes, format=f"audio/{output_format}")
-                st.caption("试听仅包含前10秒。如需完整版，请点击「完整处理音频」。")
+                st.caption("Preview: first 10 seconds only. / 仅前10秒试听")
             else:
-                st.success("混音完成！可以试听或下载：")
+                st.success("Remix complete / 混音完成")
                 st.audio(audio_bytes, format=f"audio/{output_format}")
                 st.download_button(
-                    "下载混音文件", 
+                    "Download / 下载", 
                     audio_bytes, 
                     f"remixed_track.{output_format}", 
                     f"audio/{output_format}"
@@ -404,7 +430,7 @@ if main_audio:
             os.unlink(output_path)
         except Exception as e:
             progress_placeholder.empty()
-            st.error(f"处理失败：{str(e)}")
+            st.error(f"Failed / 处理失败：{str(e)}")
             st.exception(e)
 else:
-    st.warning("请先上传主音轨。")
+    st.warning("Please upload a main track first. / 请先上传主音轨。")
