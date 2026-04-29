@@ -23,3 +23,7 @@ A Streamlit application that applies audio effects to songs and generates remixe
 ## Dependencies
 
 Python 3.8+, key packages: streamlit, pydub, pedalboard, librosa, matplotlib
+
+## Acknowledgements
+
+Forked from [aureluxx/music_remixer](https://github.com/aureluxx/music_remixer). Thanks to the original author for the MIT-licensed work.
