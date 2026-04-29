@@ -68,11 +68,17 @@ def plot_waveform(samples, sample_rate):
 
     time_axis = np.arange(len(samples)) / sample_rate
     fig, ax = plt.subplots(figsize=(8, 2.4))
-    ax.plot(time_axis, samples, linewidth=0.7, color="#14b8a6")
+    ax.plot(time_axis, samples, linewidth=0.7, color="#ff8c42")
     ax.set_xlabel("时间（秒）")
     ax.set_ylabel("振幅")
     ax.set_title("音频波形")
-    ax.grid(alpha=0.18)
+    ax.grid(alpha=0.18, color="#ffb561")
+    fig.patch.set_facecolor("#2d1b11")
+    ax.set_facecolor("#3d2618")
+    ax.xaxis.label.set_color("#ffd2a5")
+    ax.yaxis.label.set_color("#ffd2a5")
+    ax.title.set_color("#ffb561")
+    ax.tick_params(colors="#ffd2a5")
     fig.tight_layout()
     return fig
 
@@ -83,49 +89,62 @@ st.markdown(
     """
     <style>
     .stApp {
-        background: linear-gradient(180deg, #071a1f 0%, #0b1215 46%, #101417 100%);
-        color: #edfdfb;
+        background: linear-gradient(180deg, #ff7b2c 0%, #d94b1a 35%, #8b2c0d 70%, #3d1406 100%);
+        color: #fff0e0;
     }
     .block-container {
         padding-top: 2.3rem;
         padding-bottom: 3rem;
     }
     h1, h2, h3, label, .stMarkdown, .stMetric {
-        color: #edfdfb !important;
+        color: #ffe6cc !important;
     }
     div[data-testid="stExpander"] {
-        background: rgba(12, 32, 37, 0.82);
-        border: 1px solid rgba(45, 212, 191, 0.24);
+        background: rgba(45, 25, 15, 0.85);
+        border: 1px solid rgba(255, 140, 66, 0.5);
         border-radius: 10px;
     }
     div[data-testid="stFileUploaderDropzone"] {
-        background: rgba(15, 23, 42, 0.78);
-        border-color: rgba(20, 184, 166, 0.42);
+        background: rgba(60, 35, 25, 0.8);
+        border-color: rgba(255, 140, 66, 0.6);
     }
     .stButton > button, .stDownloadButton > button {
-        background: #14b8a6;
-        color: #061417;
+        background: #ff7b2c;
+        color: #2d1406;
         border: 0;
         border-radius: 8px;
         font-weight: 700;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
-        background: #2dd4bf;
-        color: #061417;
+        background: #ff9f5a;
+        color: #2d1406;
         border: 0;
     }
     div[data-baseweb="select"] > div {
-        background-color: rgba(15, 23, 42, 0.9);
-        border-color: rgba(20, 184, 166, 0.36);
+        background-color: rgba(60, 35, 25, 0.9);
+        border-color: rgba(255, 140, 66, 0.5);
     }
     div[data-testid="stMetricValue"] {
-        color: #5eead4;
+        color: #ffbc7a;
+    }
+    .stSlider > div > div > div {
+        background-color: #ff7b2c;
+    }
+    .stCheckbox > label {
+        color: #ffe6cc !important;
+    }
+    .stAlert {
+        background-color: #5c2c1a;
+        color: #ffddb0;
+    }
+    hr {
+        border-color: #ff8c42;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
-st.title("音频混音工作台")
+st.title("🌅 音频混音工作台")
 st.markdown("上传音乐，调整变调、速度、混响和 EQ，一键生成新的混音版本。")
 
 
