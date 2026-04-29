@@ -147,14 +147,13 @@ def load_user_preset():
 
 
 # --- 页面配置 ---
-st.set_page_config(page_title="Audio Remixer", layout="centered")
+st.set_page_config(page_title="Remix Lab", layout="centered")
 st.markdown(
     """
     <style>
     /* 整体浅色背景（米色暖调） */
     .stApp {
-        background: linear-gradient(135deg, #fef9e6 0%, #fff4e0 50%, #fef0dc 100%);
-        color: #2c1a0e;
+        background: linear-gradient(160deg, #fff8df 0%, #ffe9cf 36%, #ffd7c2 68%, #f8c9d4 100%);
     }
     .block-container {
         padding-top: 2rem;
@@ -162,15 +161,7 @@ st.markdown(
     }
 
     /* 所有文字颜色变为深褐色，提高对比度 */
-    h1, h2, h3, label, .stMarkdown, .stMetric, .stCaption, .stAlert, .stInfo, .stWarning, .stSuccess, .stException, p, span, div {
-        color: #2c1a0e !important;
-    }
-
     /* 覆盖 Streamlit 默认类（深色文字） */
-    .st-emotion-cache-1v0mbdj, .st-emotion-cache-1wbqy5l, .st-emotion-cache-1y4p8pa, .st-emotion-cache-16txtl3, .st-emotion-cache-183lzff, .st-emotion-cache-1gv3huu {
-        color: #2c1a0e !important;
-    }
-
     /* Expander 面板浅色半透明，深色边框 */
     div[data-testid="stExpander"] {
         background: rgba(255, 245, 225, 0.85) !important;
@@ -190,7 +181,6 @@ st.markdown(
         background: #ffe6cc !important;
         border-color: #d97a2b !important;
         border-radius: 10px !important;
-        color: #2c1a0e !important;
     }
 
     /* 按钮：暖橙色底 + 深色字，悬浮稍亮 */
@@ -255,7 +245,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.title("🌅 Audio Remixer / 音频混音工作台")
+st.title("🌅 Remix Lab / 音频混音工作台")
 st.markdown("Upload a track, adjust effects, and generate a remixed version. / 上传音乐，调整效果，生成混音版本。")
 
 # --- 会话状态初始化 ---

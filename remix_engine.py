@@ -62,9 +62,9 @@ def get_theme_effects(theme):
 def audiosegment_to_numpy(audio: AudioSegment):
     samples = np.array(audio.get_array_of_samples()).astype(np.float32) / 32768.0
     if audio.channels == 2:
-        samples = samples.reshape((-1, 2))
+        samples = samples.reshape((-1, 2)).T
     else:
-        samples = samples.reshape((-1, 1))
+        samples = samples.reshape((1, -1))
     return samples
 
 def numpy_to_audiosegment(samples: np.ndarray, sample_rate=44100):
@@ -73,8 +73,8 @@ def numpy_to_audiosegment(samples: np.ndarray, sample_rate=44100):
         channels = 1
         interleaved = samples
     else:
-        channels = samples.shape[1]
-        interleaved = samples.flatten()
+        channels = samples.shape[0]
+        interleaved = samples.T.flatten()
     return AudioSegment(
         interleaved.tobytes(), frame_rate=sample_rate, sample_width=2, channels=channels
     )
