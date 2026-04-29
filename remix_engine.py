@@ -1,6 +1,7 @@
 import io
 import tempfile
 import random
+import librosa
 import numpy as np
 from pydub import AudioSegment
 from pedalboard import (
@@ -67,7 +68,14 @@ def audiosegment_to_numpy(audio: AudioSegment):
         samples = samples.reshape((1, -1))
     return samples
 
+def ensure_channel_first(samples: np.ndarray) -> np.ndarray:
+    if samples.ndim == 2 and samples.shape[0] > samples.shape[1] and samples.shape[1] <= 2:
+        return samples.T
+    return samples
+
 def numpy_to_audiosegment(samples: np.ndarray, sample_rate=44100):
+    samples = ensure_channel_first(samples)
+
     samples = (samples * 32768).clip(-32768, 32767).astype(np.int16)
     if samples.ndim == 1:
         channels = 1
@@ -79,20 +87,33 @@ def numpy_to_audiosegment(samples: np.ndarray, sample_rate=44100):
         interleaved.tobytes(), frame_rate=sample_rate, sample_width=2, channels=channels
     )
 
+def change_speed(audio: AudioSegment, speed: float) -> AudioSegment:
+    if abs(speed - 1.0) <= 0.01:
+        return audio
+
+    samples = audiosegment_to_numpy(audio)
+    stretched_channels = [
+        librosa.effects.time_stretch(channel.astype(np.float32), rate=float(speed))
+        for channel in samples
+    ]
+    min_length = min(len(channel) for channel in stretched_channels)
+    stretched = np.vstack([channel[:min_length] for channel in stretched_channels])
+    return numpy_to_audiosegment(stretched, sample_rate=audio.frame_rate)
+
 def apply_eq(samples: np.ndarray, sample_rate: int, bass_boost=0, treble_cut=0):
-    eq_samples = samples
+    eq_samples = ensure_channel_first(samples)
 
     if abs(bass_boost) > 0.01:
         crossover_hz = 250
         bass = Pedalboard([LowpassFilter(crossover_hz)])(eq_samples, sample_rate)
         upper = Pedalboard([HighpassFilter(crossover_hz)])(eq_samples, sample_rate)
         bass_gain = 10 ** (bass_boost / 20.0)
-        eq_samples = upper + (bass * bass_gain)
+        eq_samples = ensure_channel_first(upper + (bass * bass_gain))
 
     if treble_cut and treble_cut > 0:
         cutoff_hz = min(float(treble_cut), (sample_rate / 2) - 100)
         if cutoff_hz > 20:
-            eq_samples = Pedalboard([LowpassFilter(cutoff_hz)])(eq_samples, sample_rate)
+            eq_samples = ensure_channel_first(Pedalboard([LowpassFilter(cutoff_hz)])(eq_samples, sample_rate))
 
     return eq_samples
 
@@ -115,23 +136,18 @@ def remix_song(song_bytes, crackle_bytes=None, ambient_bytes=None,
     
     # 试听模式：裁剪
     if preview_seconds > 0:
-        preview_ms = min(preview_seconds * 1000, len(song))
+        preview_ms = min(int(preview_seconds * max(speed, 0.01) * 1000), len(song))
         song = song[:preview_ms]
     
-    original_duration = len(song)
-
     def prepare_bg(bg_bytes, volume):
         if not bg_bytes or volume <= 0:
-            return AudioSegment.silent(duration=original_duration).set_channels(2)
+            return AudioSegment.silent(duration=len(song)).set_channels(2)
         bg = ensure_format(AudioSegment.from_file(io.BytesIO(bg_bytes)))
         gain = -30 * (1.0 - volume)
         bg = bg + gain
-        return (bg * ((original_duration // len(bg)) + 1))[:original_duration]
+        return (bg * ((len(song) // len(bg)) + 1))[:len(song)]
 
     report("加载背景音", 10)
-    crackle = prepare_bg(crackle_bytes, crackle_vol)
-    ambient = prepare_bg(ambient_bytes, ambient_vol)
-
     board = Pedalboard()
 
     if remix_mode == "themed":
@@ -145,12 +161,17 @@ def remix_song(song_bytes, crackle_bytes=None, ambient_bytes=None,
         board.append(Reverb(wet_level=reverb_wet))
 
     report("应用速度变化", 30)
-    if abs(speed - 1.0) > 0.01:
-        song = song.speedup(playback_speed=speed)
+    song = change_speed(song, speed)
+
+    if preview_seconds > 0:
+        song = song[:preview_seconds * 1000]
+
+    crackle = prepare_bg(crackle_bytes, crackle_vol)
+    ambient = prepare_bg(ambient_bytes, ambient_vol)
 
     report("应用音频效果", 50)
     samples = audiosegment_to_numpy(song)
-    processed = board(samples, song.frame_rate)
+    processed = ensure_channel_first(board(samples, song.frame_rate))
     
     report("应用 EQ", 70)
     processed = apply_eq(processed, song.frame_rate, bass_boost=bass_boost, treble_cut=treble_cut)

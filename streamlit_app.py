@@ -155,6 +155,17 @@ st.markdown(
     .stApp {
         background: linear-gradient(160deg, #fff8df 0%, #ffe9cf 36%, #ffd7c2 68%, #f8c9d4 100%);
     }
+
+    .stApp,
+    .stMarkdown,
+    .stCaption,
+    h1, h2, h3, p, label,
+    div[data-testid="stFileUploaderDropzone"],
+    div[data-testid="stFileUploaderDropzone"] *,
+    div[data-testid="stWidgetLabel"],
+    div[data-testid="stWidgetLabel"] * {
+        color: #c2410c !important;
+    }
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2rem;
@@ -240,6 +251,16 @@ st.markdown(
     }
     hr {
         border-color: #d9b48b !important;
+    }
+
+    h1, h2, h3,
+    h1 *, h2 *, h3 *,
+    div[data-testid="stHeading"],
+    div[data-testid="stHeading"] *,
+    div[data-testid="stHeadingWithActionElements"],
+    div[data-testid="stHeadingWithActionElements"] * {
+        color: #2c1a0e !important;
+        -webkit-text-fill-color: #2c1a0e !important;
     }
     </style>
     """,
